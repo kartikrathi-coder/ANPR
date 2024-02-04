@@ -17,4 +17,4 @@ jobs:
       - name: Push to hub
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: git push --force https://Adityasoni:$HF_TOKEN@huggingface.co/spaces/Adityasoni/anpr master
+        run: git push --force https://Adityasoni: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@huggingface.co/spaces/Adityasoni/anpr master
