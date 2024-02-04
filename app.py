@@ -12,6 +12,9 @@ import plotly.express as px
 import matplotlib.pyplot as plt
 import xml.etree.ElementTree as xet
 import pytesseract
+from transformers import TrOCRProcessor, VisionEncoderDecoderModel
+from PIL import Image
+import torch
 
 from glob import glob
 from skimage import io
@@ -147,31 +150,20 @@ def crop_image(img, x, y, width, height):
     
     return cropped_img_array
 
-def read_text_from_image_array(image_array):
-    """
-    Read text from a NumPy array representing an image using easyocr.
+def tr_ocr_image_from_array(image_array):
+    processor = TrOCRProcessor.from_pretrained("microsoft/trocr-large-printed")
+    model = VisionEncoderDecoderModel.from_pretrained("microsoft/trocr-large-printed")
 
-    Parameters:
-    - image_array: NumPy array representing the image.
+    def tr_ocr_image(src_img):
+        pixel_values = processor(images=src_img, return_tensors="pt").pixel_values
+        generated_ids = model.generate(pixel_values)
+        return processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
 
-    Returns:
-    - Extracted text in English.
-    """
-    # Convert the NumPy array to a PIL Image
-    image_pil = Image.fromarray(np.uint8(image_array))
-
-    # Convert the PIL Image to a NumPy array
-    image_np = np.array(image_pil)
+    # Convert the image array to a PIL image
+    img = Image.fromarray(image_array).convert("RGB")
 
     # Perform OCR on the image
-    reader = easyocr.Reader(['en'])
-    output = reader.readtext(image_np)
-
-    # Extract text from the result
-    extracted_text = output[0][1]
-
-    return extracted_text
-
+    return tr_ocr_image(img)
 
 def main():
     st.title("Automatic Number Plate Recognition (ANPR) App")
@@ -206,7 +198,7 @@ def main():
         
         #display the extracted number from number plate
         cropped_image = np.array(cropped_image)  # Replace ... with your actual image array
-        extracted_text = read_text_from_image_array(cropped_image)
+        extracted_text = tr_ocr_image_from_array(cropped_image)
         
         st.write("Extracted text: ")
         st.text(extracted_text)
